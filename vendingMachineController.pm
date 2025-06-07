@@ -1,54 +1,70 @@
 mdp
 
-module DrinkSelectionInterface
-	//0 = none. 1 = Kiwi-Cola. 2 = Bolt Energy. 3 = Clear Water
-	drink_selection: [0..3] init 0;
+//Constants for drink types and stock
+const int none = 0;
+const int kiwi = 1;
+const int bolt = 2;
+const int water = 3;
+const int max_stock = 3; //Minimum 3 per assignment
 
-	//Transitions for selecting drinks
-	[select_kiwi] drink_selection=0 -> (drink_selection'=1);
-	[select_bolt] drink_selection=0 -> (drink_selection'=2);
-	[select_water] drink_selection=0 -> (drink_selection'=3);
+module DrinkSelection
+    state: [0..3] init none; //0=none, 1=Kiwi-Cola, 2=Bolt Energy, 3=Clear Water
 
-	//Allow changing selection
-	[change_selection] drink_selection>0 -> (drink_selection'=0);
-endmodule
+    //Select drink if stock available and not in maintenance mode
+    [select_kiwi] state=none & kiwi_stock>0 & !maintenance -> (state'=kiwi);
+    [select_bolt] state=none & bolt_stock>0 & !maintenance -> (state'=bolt);
+    [select_water] state=none & water_stock>0 & !maintenance -> (state'=water);
 
-module EFPOSPayment
-	//0 = Not paid. 1 = Paid. 2 = Incorrect Pin
-	payment_status: [0..2] init 0;
+    //Change selection before payment
+    [change_selection] state>none & !maintenance & !pay -> (state'=none);
     
-	//Transitions for payment
-	[enter_pin_correct] payment_status=0 -> (payment_status'=1);
-	[enter_pin_incorrect] payment_status=0 -> (payment_status'=2);
-
-	//Reset after incorrect pin
-	[reset_transaction] payment_status=2 -> (payment_status'=0);
+    //Synchronize with payment and reset after dispensing
+    [pay] state>none & pay & !maintenance -> (state'=none);
+    
+    //Reset on incorrect PIN
+    [reset] state>none & payment_error & !maintenance -> (state'=none);
 endmodule
 
-module DrinkDispenser
-	//Drink levels, for this example we start with 5 each
-	kiwi_stock: [0..5] init 5;
-	bolt_stock: [0..5] init 5;
-	water_stock: [0..5] init 5;
-
-	//Errors, here 0 is false, and 1 is true
-	error: [0..1] init 0;
-	maintenance: [0..1] init 0;
-
-	//Dispense transistions
-	//Dispense kiwi if the payment status is 1, drink_selection is 1, and kiwi_stock is greater than 0
-	[dispense_kiwi] payment_status=1 & drink_selection=1 & kiwi_stock>0 -> (kiwi_stock'=kiwi_stock-1);
-
-	//Dispense bolt if the payment status is 1, drink_selection is 2, and bolt_stock is greater than 0
-	[dispense_bolt] payment_status=1 & drink_selection=2 & bolt_stock>0 -> (bolt_stock'=bolt_stock-1);
-
-	//Dispense water if the payment status is 1, drink_selection is 3, and water_stock is greater than 0
-	[dispense_water] payment_status=1 & drink_selection=3 & water_stock>0 -> (water_stock'=water_stock-1);
-
-	//Error transistion
-	[error_event] error=1 -> (maintenance'=1);
-
-	//Maintenance if any drink runs out
-	[check_stock] (kiwi_stock=0 | bolt_stock=0 | water_stock=0) -> (maintenance'=1);
+module Payment
+    pay: bool init false; //True when payment is successful
+    payment_error: bool init false; //True when incorrect PIN entered
+    
+    //Start payment after selection
+    [start_payment] state>none & !pay & !payment_error & !maintenance -> (pay'=true);
+    
+    //Incorrect PIN
+    [wrong_pin] state>none & !pay & !payment_error & !maintenance -> (payment_error'=true);
+    
+    //Reset after incorrect PIN
+    [reset] payment_error & !maintenance -> (payment_error'=false) & (pay'=false);
+    
+    //Reset after dispensing
+    [dispense] pay & !maintenance -> (pay'=false);
 endmodule
 
+module Dispenser
+    kiwi_stock: [0..max_stock] init max_stock;
+    bolt_stock: [0..max_stock] init max_stock;
+    water_stock: [0..max_stock] init max_stock;
+    error: bool init false;
+    maintenance: bool init false;
+    dispense: bool init false;
+    
+    //Dispense drink if paid and stock available
+    [dispense] pay & state=kiwi & kiwi_stock>0 & !maintenance -> (kiwi_stock'=kiwi_stock-1) & (dispense'=true);
+    [dispense] pay & state=bolt & bolt_stock>0 & !maintenance -> (bolt_stock'=bolt_stock-1) & (dispense'=true);
+    [dispense] pay & state=water & water_stock>0 & !maintenance -> (water_stock'=water_stock-1) & (dispense'=true);
+    
+    //Reset dispense flag
+    [reset_dispense] dispense & !maintenance -> (dispense'=false);
+    
+    //Error event
+    [error_event] !error & !maintenance -> 0.99:(error'=false) + 0.01:(error'=true);
+    [error_event] error & !maintenance -> (maintenance'=true);
+    
+    //Maintenance mode when all drinks are empty
+    [check_stock] kiwi_stock=0 & bolt_stock=0 & water_stock=0 & !maintenance -> (maintenance'=true);
+    
+    //Stay in maintenance mode
+    [] maintenance -> (maintenance'=true);
+endmodule
