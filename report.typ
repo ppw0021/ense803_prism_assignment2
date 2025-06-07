@@ -33,9 +33,9 @@
 
 = Design Team Project \ Vending Machine Controller Verification 
 == ENSE803 - Formal Specification and Design
-=== Declan Ross (20108351) 
-=== Anson Huang (20120333)
-=== Mahiir Hussain Shaik (21154502)
+Declan Ross (20108351) \
+Anson Huang (20120333)\
+Mahiir Hussain Shaik (21154501)\
 
 #pagebreak()
 
@@ -85,7 +85,9 @@ module EFPOSPayment
     //Reset after dispensing
     [dispense] pay & !maintenance -> (pay'=false);
 endmodule
-
+```
+#pagebreak()
+```js
 module Dispenser
     kiwi_stock: [0..max_stock] init max_stock;
     bolt_stock: [0..max_stock] init max_stock;
@@ -116,37 +118,94 @@ module Dispenser
 endmodule
 ```
 //#pagebreak()
-== Design Decisions
-Our design decisions for this model are as follows:
-1. The model is modular design, with the Components being split into logical Modules: _DrinkSelectionInterface, EFPOSPayment,_ and _Dispenser_. This makes understanding the model easier, as each module has a specific purpose.
-2. Clear and consise variable names are used throughout the model, such as _drink_selection,_ _payment_status_ etc. This makes it easier to understand the model and its purpose.
-3. The model uses good transitions, ensuring that transistions only occur when the correct conditions are met. For example, the _dispense_ transition only occurs when the _payment_status_ is _paid_ and the _drink_selection_ is not empty.
+==== Design Decisions
+1. _Modular Structure._ The model is designed modularly, with components logically divided into separate modules: DrinkSelection, EFPOSPayment, and Dispenser. This separation of concerns improves readability and maintainability, as each module has a well-defined purpose.
 
-//#pagebreak()
+2. _Clear and Concise Variable Naming._ Descriptive and consistent variable names such as _state_, _kiwi_stock_, and _pay_ are used throughout the model. This improves code clarity and helps users understand the model's behavior at a glance.
+
+3. _Well-Defined Transitions._ Transitions are defined with precise guard conditions to ensure that actions only occur under valid circumstances. For instance, the dispense transition only triggers when payment has been successfully made and a valid drink selection has been made.
+
+4. _Error Modeling with Probabilistic Transitions._ We introduced a probabilistic transition for simulating internal machine faults ([error_event] with 0.01 probability). This models real-world uncertainty and allows for analysis of system reliability using probabilistic model checking.
+
+#pagebreak()
 == Scenarios
 Here are our scenarios.
-=== Scenario 1
+==== Scenario 1
 _Customer selects Clear Water and pays via EFPOS, with correct pin._\
-Simulation trace output for each scenario with discussion
+#figure(
+  image("Scenarios/scenario1.png", width: 60%),
+  caption: "Simulation trace output: Customer selects Clear Water and pays via EFPOS with correct pin"
+)
+In this scenario, the customer successfully selects Clear Water and pays via EFPOS with the correct pin. The simulation trace shows that the drink is dispensed correctly, and the stock of Clear Water is reduced by one. The system remains in a normal operational state without entering maintenance mode.
 
-=== Scenario 2
-_Customer selects Kiwi-Cola and pays via EFPOS, with incorrect pin._\
-Simulation trace output for each scenario with discussion
+==== Scenario 2
+#figure(
+  image("Scenarios/scenario2.png", width: 60%),
+  caption: "Simulation trace output: Customer selects Kiwi-Cola and pays via EFPOS with incorrect pin"
+)
+In this scenario, the customer attempts to select Kiwi-Cola and pay via EFPOS but enters an incorrect pin. The simulation trace shows that the payment fails, and the system resets the payment status. The customer can then reattempt the selection or payment without entering maintenance mode.
 
-=== Scenario 3
-_Customer selects a drink but an error occurs._\
-Simulation trace output for each scenario with discussion
+==== Scenario 3
+#figure(
+  image("Scenarios/scenario3.png", width: 60%),
+  caption: "Simulation trace output: Customer selects a drink but an error occurs"
+)
+In this scenario, the customer selects a drink, but an error occurs during the process. The simulation trace shows that the system enters maintenance mode due to the error. The customer cannot complete the transaction until the error is resolved, ensuring that the system remains in a safe state.
 
-=== Scenario 4
+==== Scenario 4
+#figure(
+  image("Scenarios/scenario4.png", width: 60%),
+  caption: "Simulation trace output: Customer selects Clear Water but no drinks available"
+)
 _Customer selects a Clear Water but there are no drinks of this kind available._\
+In this scenario, the customer attempts to select Clear Water, but there are no drinks available. The simulation trace shows that the system does not allow the selection of an unavailable drink, and the customer is prompted to make a different selection. This ensures that the vending machine does not dispense an empty or unavailable drink.
+#pagebreak()
+==== Scenario 5
+#figure(
+  image("Scenarios/scenario5.png", width: 60%),
+  caption: "Simulation trace output: Customer purchases Bolt Energy Drink and then purchases Clear Water"
+)
 Simulation trace output for each scenario with discussion
-
-=== Scenario 5
-_Customer purchases Bolt Energy Drink and then purchases Clear Water._\
-Simulation trace output for each scenario with discussion
-
+In this scenario, the customer successfully purchases a Bolt Energy Drink and then proceeds to purchase Clear Water. The simulation trace shows that the system correctly updates the stock levels for both drinks and dispenses them as expected. The system remains in a normal operational state without entering maintenance mode, demonstrating its ability to handle multiple transactions sequentially.
 == Temporal Logic Formulae
-1. Once in, the vending machine never leaves maintenance mode
-2. If an error occurs, then maintenance mode occurs in the next state
-3. A customer may not select an unavailable drink _AG (soda empty -> AF soda not selected)_
-4. When a customer pays for a drink, it is dispensed _AG (pay -> AF dispense)_
+Here is our list of Formulae:
+#figure(
+  image("Formulae/main.png", width: 80%),
+  caption: "Temporal Logic Formulae for Vending Machine Controller Verification"
+)
+1. Once in, the vending machine never leaves maintenance mode:
+#figure(
+  image("Formulae/formula1a.png", width: 30%),
+  caption: "Maintenance Mode"
+)
+#figure(
+  image("Formulae/formula1b.png", width: 90%),
+  caption: "Maintenance mode, simulator tab"
+)
+2. If an error occurs, then maintenance mode occurs in the next state:
+#figure(
+  image("Formulae/formula2a.png", width: 30%),
+  caption: "Error Handling"
+)
+#figure(
+  image("Formulae/formula2b.png", width: 90%),
+  caption: "Error Handling mode, simulator tab"
+)
+3. A customer may not select an unavailable drink _AG (soda empty -> AF soda not selected):_
+#figure(
+  image("Formulae/formula3a.png", width: 90%),
+  caption: "Unavailable Drink Selection"
+)
+#figure(
+  image("Formulae/formula3b.png", width: 90%),
+  caption: "Unavailable Drink Selection, simulator tab"
+)
+4. When a customer pays for a drink, it is dispensed _AG (pay -> AF dispense):_
+#figure(
+  image("Formulae/formula4a.png", width: 30%),
+  caption: "Drink Dispensing"
+)
+#figure(
+  image("Formulae/formula4b.png", width: 90%),
+  caption: "Drink Dispensing, simulator tab"
+)
