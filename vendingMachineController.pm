@@ -5,7 +5,7 @@ const int none = 0;
 const int kiwi = 1;
 const int bolt = 2;
 const int water = 3;
-const int max_stock = 3; //Minimum 3 per assignment
+const int max_stock = 3;
 
 module DrinkSelection
     state: [0..3] init none; //0=none, 1=Kiwi-Cola, 2=Bolt Energy, 3=Clear Water
@@ -25,7 +25,7 @@ module DrinkSelection
     [reset] state>none & payment_error & !maintenance -> (state'=none);
 endmodule
 
-module Payment
+module EFPOSPayment
     pay: bool init false; //True when payment is successful
     payment_error: bool init false; //True when incorrect PIN entered
     
@@ -58,9 +58,11 @@ module Dispenser
     //Reset dispense flag
     [reset_dispense] dispense & !maintenance -> (dispense'=false);
     
-    //Error event
+    //Simulate error event
     [error_event] !error & !maintenance -> 0.99:(error'=false) + 0.01:(error'=true);
-    [error_event] error & !maintenance -> (maintenance'=true);
+    
+	//Error event
+	[error_event] error & !maintenance -> (maintenance'=true);
     
     //Maintenance mode when all drinks are empty
     [check_stock] kiwi_stock=0 & bolt_stock=0 & water_stock=0 & !maintenance -> (maintenance'=true);
