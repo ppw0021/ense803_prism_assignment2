@@ -53,11 +53,13 @@ Here is our PRISM model for the project, it was created and initially written in
 ```
 //#pagebreak()
 ==== Design Decisions
-1. _Modular Structure._ The model is designed modularly, with components logically divided into separate modules: _DrinkSelection,_ _EFPOSPayment,_ and _Dispenser._ This separation of concerns improves readability and maintainability, as each module has a well-defined purpose.
+1. _Modular Structure._ The model is designed modularly, with components logically divided into separate modules: _DrinkSelection,_ _Payment Dispenser,_ and _Error._ This separation of concerns improves readability and maintainability, as each module has a well-defined purpose.
 
-2. _Clear and Concise Variable Naming._ Descriptive and consistent variable names such as _state_, _kiwi_stock_, and _pay_ are used throughout the model. This improves code clarity and helps users understand the model's behavior at a glance.
+2. _Clear and Concise Variable Naming._ Descriptive and consistent variable names such as _state_, _kiwi_stock_, and _pay_ are used throughout the model. This improves code clarity and helps users understand the model's behavior.
 
-3. _Well-Defined Transitions._ Transitions are defined with precise guard conditions to ensure that actions only occur under valid circumstances. For instance, the dispense transition only triggers when payment has been successfully made and a valid drink selection has been made.
+3. _Well-Defined Transitions._ Transitions are defined with guard conditions to ensure that actions only occur under valid circumstances. For instance, the dispense transition only triggers when payment has been successfully made and a valid drink selection has been made.
+
+4. _Intentional Error_. You can intentionally cause an error by selecting error after selecting a drink. This is a deliberate design choice to demonstrate the model's error handling capabilities. The error transition leads to a maintenance mode.
 
 #pagebreak()
 == Scenarios
