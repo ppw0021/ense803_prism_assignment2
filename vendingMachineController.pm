@@ -1,6 +1,6 @@
 mdp
 
-// Constants for drink types and stock
+//Constants for drink types and stock
 const int none = 0;
 const int kiwi = 1;
 const int bolt = 2;
@@ -21,7 +21,7 @@ module DrinkSelection
     [change_selection] state=water & water_stock=0 & !maintenance & !pay & !dispense & !main & !error -> (state'=none);
 
     //Synchronize with payment, incorrect PIN, or error
-    [change_selection] state>none & !maintenance & !main & !error -> (state'=none);
+    [pay] state>none & !maintenance & !main & !error -> (state'=none);
     [wrong_pin] state>none & !maintenance & !main & !error -> (state'=none);
     [error] state>none & !maintenance & !main & !error -> (state'=none);
 endmodule
@@ -35,12 +35,12 @@ module PaymentDispenser
     maintenance: bool init false;
 
     //Process payment (correct PIN, sets dispense=true, reduces stock if available)
-    [pay_dispense_kiwi] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock>0 -> (pay'=false) & (dispense'=true) & (kiwi_stock'=kiwi_stock-1);
-    [pay_dispense_bolt] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock>0 -> (pay'=false) & (dispense'=true) & (bolt_stock'=bolt_stock-1);
-    [pay_dispense_water] state=water & !maintenance & !dispense & !main & !error & water_stock>0 -> (pay'=false) & (dispense'=true) & (water_stock'=water_stock-1);
-    [kiwi_out_of_stock] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock=0 -> (pay'=false) & (dispense'=true);
-    [bolt_out_of_stock] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock=0 -> (pay'=false) & (dispense'=true);
-    [water_out_of_stock] state=water & !maintenance & !dispense & !main & !error & water_stock=0 -> (pay'=false) & (dispense'=true);
+    [pay] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock>0 -> (pay'=false) & (dispense'=true) & (kiwi_stock'=kiwi_stock-1);
+    [pay] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock>0 -> (pay'=false) & (dispense'=true) & (bolt_stock'=bolt_stock-1);
+    [pay] state=water & !maintenance & !dispense & !main & !error & water_stock>0 -> (pay'=false) & (dispense'=true) & (water_stock'=water_stock-1);
+    [pay] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock=0 -> (pay'=false) & (dispense'=true);
+    [pay] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock=0 -> (pay'=false) & (dispense'=true);
+    [pay] state=water & !maintenance & !dispense & !main & !error & water_stock=0 -> (pay'=false) & (dispense'=true);
 
     //Reset dispense flag after payment
     [] dispense=true & !maintenance & !main & !error -> (dispense'=false);
@@ -58,7 +58,7 @@ module PaymentDispenser
     [error] state>none & !pay & !dispense & !main & !error -> (maintenance'=true);
 endmodule
 
-module Error
+module error
     main : bool init false;
     error : bool init false;
     [error] !main & !error -> (error'=true);
