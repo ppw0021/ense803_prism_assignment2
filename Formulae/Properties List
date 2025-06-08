@@ -1,7 +1,8 @@
-A[G(maintenance => A[G(maintenance)])];
+A [ G (maintenance=>A [ G (maintenance) ]) ]
 
-A[G(error => A[X(maintenance)])];
+A [ G (error=>A [ X (maintenance) ]) ]
 
-A[G((kiwi_stock=0 => A[G(state!=kiwi)]) & (kiwi_stock=0 => A[G(state!=kiwi)]) & (kiwi_stock=0 => A[G(state!=kiwi)]))]
+A [ G ((kiwi_stock=0=>A [ G (state!=kiwi) ])&(kiwi_stock=0=>A [ G (state!=kiwi) ])&(kiwi_stock=0=>A [ G (state!=kiwi) ])) ]
 
-A[G(pay=>A[F(dispense=doneDispensing)])];
+A[G(pay=>A[F(dispense=true)])];
+

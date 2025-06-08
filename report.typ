@@ -36,7 +36,7 @@
 
 = Design Team Project \ Vending Machine Controller Verification 
 == ENSE803 - Formal Specification and Design
-Declan Ross (20108351) \
+Declan Ross (20108351)\
 Anson Huang (20120333)\
 Mahiir Hussain Shaik (21154501)\
 
@@ -47,7 +47,7 @@ Here is our PRISM model for the project, it was created and initially written in
 ```js
 mdp
 
-// Constants for drink types and stock
+//Constants for drink types and stock
 const int none = 0;
 const int kiwi = 1;
 const int bolt = 2;
@@ -68,7 +68,7 @@ module DrinkSelection
     [change_selection] state=water & water_stock=0 & !maintenance & !pay & !dispense & !main & !error -> (state'=none);
 
     //Synchronize with payment, incorrect PIN, or error
-    [change_selection] state>none & !maintenance & !main & !error -> (state'=none);
+    [pay] state>none & !maintenance & !main & !error -> (state'=none);
     [wrong_pin] state>none & !maintenance & !main & !error -> (state'=none);
     [error] state>none & !maintenance & !main & !error -> (state'=none);
 endmodule
@@ -80,16 +80,18 @@ module PaymentDispenser
     bolt_stock: [0..max_stock] init max_stock;
     water_stock: [0..max_stock] init max_stock;
     maintenance: bool init false;
+
+    
 ```
 #pagebreak()
 ```js
 //Process payment (correct PIN, sets dispense=true, reduces stock if available)
-    [pay_dispense_kiwi] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock>0 -> (pay'=false) & (dispense'=true) & (kiwi_stock'=kiwi_stock-1);
-    [pay_dispense_bolt] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock>0 -> (pay'=false) & (dispense'=true) & (bolt_stock'=bolt_stock-1);
-    [pay_dispense_water] state=water & !maintenance & !dispense & !main & !error & water_stock>0 -> (pay'=false) & (dispense'=true) & (water_stock'=water_stock-1);
-    [kiwi_out_of_stock] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock=0 -> (pay'=false) & (dispense'=true);
-    [bolt_out_of_stock] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock=0 -> (pay'=false) & (dispense'=true);
-    [water_out_of_stock] state=water & !maintenance & !dispense & !main & !error & water_stock=0 -> (pay'=false) & (dispense'=true);
+    [pay] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock>0 -> (pay'=false) & (dispense'=true) & (kiwi_stock'=kiwi_stock-1);
+    [pay] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock>0 -> (pay'=false) & (dispense'=true) & (bolt_stock'=bolt_stock-1);
+    [pay] state=water & !maintenance & !dispense & !main & !error & water_stock>0 -> (pay'=false) & (dispense'=true) & (water_stock'=water_stock-1);
+    [pay] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock=0 -> (pay'=false) & (dispense'=true);
+    [pay] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock=0 -> (pay'=false) & (dispense'=true);
+    [pay] state=water & !maintenance & !dispense & !main & !error & water_stock=0 -> (pay'=false) & (dispense'=true);
 
     //Reset dispense flag after payment
     [] dispense=true & !maintenance & !main & !error -> (dispense'=false);
@@ -107,14 +109,14 @@ module PaymentDispenser
     [error] state>none & !pay & !dispense & !main & !error -> (maintenance'=true);
 endmodule
 
-module Error
+module error
     main : bool init false;
     error : bool init false;
     [error] !main & !error -> (error'=true);
     [main] error -> (main'=true) & (error'=false);
 endmodule
 ```
-//#pagebreak()
+#pagebreak()
 ==== Design Decisions
 1. _Modular Structure._ The model is designed modularly, with components logically divided into separate modules: _DrinkSelection,_ _Payment Dispenser,_ and _Error._ This separation of concerns improves readability and maintainability, as each module has a well-defined purpose.
 
@@ -122,11 +124,12 @@ endmodule
 
 3. _Well-Defined Transitions._ Transitions are defined with guard conditions to ensure that actions only occur under valid circumstances. For instance, the dispense transition only triggers when payment has been successfully made and a valid drink selection has been made.
 
-4. _Intentional Error_. You can intentionally cause an error by selecting error after selecting a drink. This is a deliberate design choice to demonstrate the model's error handling capabilities. The error transition leads to a maintenance mode.
+4. _Intentional Error_. You can intentionally cause an error by selecting error after selecting a drink.The error transition leads to a maintenance mode.
 
-#pagebreak()
+5. _PaymentDispenser._ This module handles the payment and dispensing logic. It includes transitions for successful payments, incorrect PIN entries, and error handling. The payment process is designed to ensure that drinks are dispensed only when payment is successful and stock is available.
+
 == Scenarios
-Here are our scenarios.
+
 ==== Scenario 1
 _Customer selects Clear Water and pays via EFPOS, with correct pin._\
 #figure(
@@ -134,36 +137,40 @@ _Customer selects Clear Water and pays via EFPOS, with correct pin._\
   caption: "Simulation trace output: Customer selects Clear Water and pays via EFPOS with correct pin"
 )
 In this scenario, the customer successfully selects Clear Water and pays via EFPOS with the correct pin. The simulation trace shows that the drink is dispensed correctly, and the stock of Clear Water is reduced by one. The system remains in a normal operational state without entering maintenance mode.
-
+#pagebreak()
 ==== Scenario 2
+_Customer selects Kiwi-Cola and pays via EFPOS, with incorrect pin._
 #figure(
   image("Scenarios/scenario2.png", width: 60%),
   caption: "Simulation trace output: Customer selects Kiwi-Cola and pays via EFPOS with incorrect pin"
 )
 In this scenario, the customer attempts to select Kiwi-Cola and pay via EFPOS but enters an incorrect pin. The simulation trace shows that the payment fails, and the system resets the payment status. The customer can then reattempt the selection or payment without entering maintenance mode.
-
 ==== Scenario 3
+_Customer selects a drink but an error occurs._
 #figure(
   image("Scenarios/scenario3.png", width: 60%),
   caption: "Simulation trace output: Customer selects a drink but an error occurs"
 )
 In this scenario, the customer selects a drink, but an error occurs during the process. The simulation trace shows that the system enters maintenance mode due to the error. The customer cannot complete the transaction until the error is resolved, ensuring that the system remains in a safe state.
-
+#pagebreak()
 ==== Scenario 4
+_Customer selects a Clear Water but there are no drinks of this kind available._
 #figure(
   image("Scenarios/scenario4.png", width: 60%),
   caption: "Simulation trace output: Customer selects Clear Water but no drinks available"
 )
 _Customer selects a Clear Water but there are no drinks of this kind available._\
 In this scenario, the customer attempts to select Clear Water, but there are no drinks available. The simulation trace shows that the system does not allow the selection of an unavailable drink, and the customer is prompted to make a different selection. This ensures that the vending machine does not dispense an empty or unavailable drink.
-#pagebreak()
+
 ==== Scenario 5
+_Customer purchases Bolt Energy Drink and then purchases Clear Water._
 #figure(
   image("Scenarios/scenario5.png", width: 60%),
   caption: "Simulation trace output: Customer purchases Bolt Energy Drink and then purchases Clear Water"
 )
 Simulation trace output for each scenario with discussion
 In this scenario, the customer successfully purchases a Bolt Energy Drink and then proceeds to purchase Clear Water. The simulation trace shows that the system correctly updates the stock levels for both drinks and dispenses them as expected. The system remains in a normal operational state without entering maintenance mode, demonstrating its ability to handle multiple transactions sequentially.
+#pagebreak()
 == Temporal Logic Formulae
 Here is our list of Formulae:
 #figure(
@@ -179,6 +186,7 @@ Here is our list of Formulae:
   image("Formulae/formula1b.png", width: 90%),
   caption: "Maintenance mode, simulator tab"
 )
+#pagebreak()
 2. If an error occurs, then maintenance mode occurs in the next state:
 #figure(
   image("Formulae/formula2a.png", width: 30%),
@@ -188,7 +196,6 @@ Here is our list of Formulae:
   image("Formulae/formula2b.png", width: 90%),
   caption: "Error occurs in the next state, simulator tab"
 )
-#pagebreak()
 3. A customer may not select an unavailable drink _AG (soda empty -> AF soda not selected):_
 #figure(
   image("Formulae/formula3a.png", width: 90%),
