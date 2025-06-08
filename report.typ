@@ -19,6 +19,7 @@
   ],
 )
 
+
 #show heading.where(level:1):set text(
   size: 36pt
 )
@@ -30,6 +31,8 @@
 #show heading.where(level:3):set text(
   size: 16pt
 )
+
+#show figure.caption: emph
 
 = Design Team Project \ Vending Machine Controller Verification 
 == ENSE803 - Formal Specification and Design
@@ -119,7 +122,7 @@ endmodule
 ```
 //#pagebreak()
 ==== Design Decisions
-1. _Modular Structure._ The model is designed modularly, with components logically divided into separate modules: DrinkSelection, EFPOSPayment, and Dispenser. This separation of concerns improves readability and maintainability, as each module has a well-defined purpose.
+1. _Modular Structure._ The model is designed modularly, with components logically divided into separate modules: _DrinkSelection,_ _EFPOSPayment,_ and _Dispenser._ This separation of concerns improves readability and maintainability, as each module has a well-defined purpose.
 
 2. _Clear and Concise Variable Naming._ Descriptive and consistent variable names such as _state_, _kiwi_stock_, and _pay_ are used throughout the model. This improves code clarity and helps users understand the model's behavior at a glance.
 
