@@ -10,7 +10,7 @@
 
 #set page(
   footer: context [
-    _Declan Ross, Anson Huang, Mahiir Hussain Shaik_
+    _Declan Ross, Anson Huang, Maahir Hussain Shaik_
     #h(1fr)
     #counter(page).display(
       "1 of 1",
@@ -38,7 +38,7 @@
 == ENSE803 - Formal Specification and Design
 Declan Ross (20108351)\
 Anson Huang (20120333)\
-Mahiir Hussain Shaik (21154501)\
+Maahir Hussain Shaik (21154501)\
 
 #pagebreak()
 
@@ -122,9 +122,9 @@ endmodule
 
 2. _Clear and Concise Variable Naming._ Descriptive and consistent variable names such as _state_, _kiwi_stock_, and _pay_ are used throughout the model. This improves code clarity and helps users understand the model's behavior.
 
-3. _Well-Defined Transitions._ Transitions are defined with guard conditions to ensure that actions only occur under valid circumstances. For instance, the dispense transition only triggers when payment has been successfully made and a valid drink selection has been made.
+3. _Well-Defined Transitions._ Transisitons between states are clearly defined, with conditions specified for each transition. This ensures that the model accurately reflects the intended behavior of the vending machine, such as allowing drink selection only when stock is available, or permanently staying in maintenance mode.
 
-4. _Intentional Error_. You can intentionally cause an error by selecting error after selecting a drink.The error transition leads to a maintenance mode.
+4. _Intentional Error_. You can intentionally cause an error by selecting error after selecting a drink. The error transition leads to a maintenance mode.
 
 5. _PaymentDispenser._ This module handles the payment and dispensing logic. It includes transitions for successful payments, incorrect PIN entries, and error handling. The payment process is designed to ensure that drinks are dispensed only when payment is successful and stock is available.
 
@@ -182,35 +182,19 @@ Here is our list of Formulae:
   image("Formulae/formula1a.png", width: 30%),
   caption: "Maintenance Mode"
 )
-#figure(
-  image("Formulae/formula1b.png", width: 90%),
-  caption: "Maintenance mode, simulator tab"
-)
-#pagebreak()
 2. If an error occurs, then maintenance mode occurs in the next state:
 #figure(
   image("Formulae/formula2a.png", width: 30%),
   caption: "Error Handling"
 )
-#figure(
-  image("Formulae/formula2b.png", width: 90%),
-  caption: "Error occurs in the next state, simulator tab"
-)
+#pagebreak()
 3. A customer may not select an unavailable drink _AG (soda empty -> AF soda not selected):_
 #figure(
   image("Formulae/formula3a.png", width: 90%),
   caption: "Unavailable Drink Selection"
 )
-#figure(
-  image("Formulae/formula3b.png", width: 90%),
-  caption: "Unavailable Drink Selection, only able to select available drinks, simulator tab"
-)
 4. When a customer pays for a drink, it is dispensed _AG (pay -> AF dispense):_
 #figure(
   image("Formulae/formula4a.png", width: 30%),
   caption: "Drink Dispensing"
-)
-#figure(
-  image("Formulae/formula4b.png", width: 90%),
-  caption: "Drink Dispensing, simulator tab"
 )
