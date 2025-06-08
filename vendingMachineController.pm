@@ -44,12 +44,13 @@ endmodule
 module EFPOSPayment
     pay: bool init false; //True when payment is successful
     payment_error: bool init false; //True when incorrect PIN entered
+    incorrect_pin: bool init false; //Manually set false pin
     
     //Start payment after selection
     [start_payment] moduleState=efposPaymentModule & selected_state>none & pay=false & payment_error=false & maintenance=false -> (pay'=true);
     
     //Incorrect PIN
-    [wrong_pin] moduleState=efposPaymentModule & state>none & pay=false & payment_error=false & maintenance=false -> (payment_error'=true);
+    [wrong_pin] moduleState=efposPaymentModule & state>none & pay=false & incorrect_pin & payment_error=false & maintenance=false -> (payment_error'=true);
     
     //Reset after incorrect PIN
     [reset] moduleState=efposPaymentModule & payment_error & maintenance=false -> (payment_error'=false) & (pay'=false);
@@ -62,7 +63,6 @@ module Dispenser
     kiwi_stock: [0..max_stock] init max_stock;
     bolt_stock: [0..max_stock] init max_stock;
     water_stock: [0..max_stock] init max_stock;
-    error: bool init false;
     maintenance: bool init false;
     dispense: [0..2] init readyToDispense;
     
