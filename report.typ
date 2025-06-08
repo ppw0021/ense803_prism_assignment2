@@ -45,11 +45,74 @@ Mahiir Hussain Shaik (21154501)\
 == PRISM Model
 Here is our PRISM model for the project, it was created and initially written in VSCode, then tested in the PRISM model checker. 
 ```js
+mdp
 
+// Constants for drink types and stock
+const int none = 0;
+const int kiwi = 1;
+const int bolt = 2;
+const int water = 3;
+const int max_stock = 3; //Minimum 3 per assignment
+
+module DrinkSelection
+    state: [0..3] init none; //0=none, 1=Kiwi-Cola, 2=Bolt Energy, 3=Clear Water
+
+    //Select any drink directly from the menu only if it's in stock
+    [select_kiwi] state=none & kiwi_stock>0 & !maintenance & !pay & !dispense & !main & !error -> (state'=kiwi);
+    [select_bolt] state=none & bolt_stock>0 & !maintenance & !pay & !dispense & !main & !error -> (state'=bolt);
+    [select_water] state=none & water_stock>0 & !maintenance & !pay & !dispense & !main & !error -> (state'=water);
+
+    //Change selection if selected drink is out of stock
+    [change_selection] state=kiwi & kiwi_stock=0 & !maintenance & !pay & !dispense & !main & !error -> (state'=none);
+    [change_selection] state=bolt & bolt_stock=0 & !maintenance & !pay & !dispense & !main & !error -> (state'=none);
+    [change_selection] state=water & water_stock=0 & !maintenance & !pay & !dispense & !main & !error -> (state'=none);
+
+    //Synchronize with payment, incorrect PIN, or error
+    [change_selection] state>none & !maintenance & !main & !error -> (state'=none);
+    [wrong_pin] state>none & !maintenance & !main & !error -> (state'=none);
+    [error] state>none & !maintenance & !main & !error -> (state'=none);
+endmodule
+
+module PaymentDispenser
+    pay: bool init false; //True when payment is initiated
+    dispense: bool init false; //True when dispensing
+    kiwi_stock: [0..max_stock] init max_stock;
+    bolt_stock: [0..max_stock] init max_stock;
+    water_stock: [0..max_stock] init max_stock;
+    maintenance: bool init false;
 ```
 #pagebreak()
 ```js
+//Process payment (correct PIN, sets dispense=true, reduces stock if available)
+    [pay_dispense_kiwi] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock>0 -> (pay'=false) & (dispense'=true) & (kiwi_stock'=kiwi_stock-1);
+    [pay_dispense_bolt] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock>0 -> (pay'=false) & (dispense'=true) & (bolt_stock'=bolt_stock-1);
+    [pay_dispense_water] state=water & !maintenance & !dispense & !main & !error & water_stock>0 -> (pay'=false) & (dispense'=true) & (water_stock'=water_stock-1);
+    [kiwi_out_of_stock] state=kiwi & !maintenance & !dispense & !main & !error & kiwi_stock=0 -> (pay'=false) & (dispense'=true);
+    [bolt_out_of_stock] state=bolt & !maintenance & !dispense & !main & !error & bolt_stock=0 -> (pay'=false) & (dispense'=true);
+    [water_out_of_stock] state=water & !maintenance & !dispense & !main & !error & water_stock=0 -> (pay'=false) & (dispense'=true);
 
+    //Reset dispense flag after payment
+    [] dispense=true & !maintenance & !main & !error -> (dispense'=false);
+
+    //Incorrect PIN
+    [wrong_pin] state>none & !pay & !dispense & !main & !error -> true;
+
+    //Maintenance mode when all drinks are empty
+    [check_stock] state=none & kiwi_stock=0 & bolt_stock=0 & water_stock=0 & !maintenance & !main & !error -> (maintenance'=true);
+
+    //Stay in maintenance mode
+    [] maintenance -> (maintenance'=true);
+
+    //Synchronize maintenance with error
+    [error] state>none & !pay & !dispense & !main & !error -> (maintenance'=true);
+endmodule
+
+module Error
+    main : bool init false;
+    error : bool init false;
+    [error] !main & !error -> (error'=true);
+    [main] error -> (main'=true) & (error'=false);
+endmodule
 ```
 //#pagebreak()
 ==== Design Decisions
@@ -123,8 +186,9 @@ Here is our list of Formulae:
 )
 #figure(
   image("Formulae/formula2b.png", width: 90%),
-  caption: "Error Handling mode, simulator tab"
+  caption: "Error occurs in the next state, simulator tab"
 )
+#pagebreak()
 3. A customer may not select an unavailable drink _AG (soda empty -> AF soda not selected):_
 #figure(
   image("Formulae/formula3a.png", width: 90%),
@@ -132,7 +196,7 @@ Here is our list of Formulae:
 )
 #figure(
   image("Formulae/formula3b.png", width: 90%),
-  caption: "Unavailable Drink Selection, simulator tab"
+  caption: "Unavailable Drink Selection, only able to select available drinks, simulator tab"
 )
 4. When a customer pays for a drink, it is dispensed _AG (pay -> AF dispense):_
 #figure(
