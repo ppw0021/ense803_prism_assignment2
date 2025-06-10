@@ -43,7 +43,7 @@ Maahir Hussain Shaik (21154501)\
 #pagebreak()
 
 == PRISM Model
-Here is our PRISM model for the project, it was created and initially written in VSCode, then tested in the PRISM model checker. 
+Here is our PRISM model for the project.
 ```js
 mdp
 
@@ -118,11 +118,13 @@ endmodule
 ```
 #pagebreak()
 ==== Design Decisions
-1. _Modular Structure._ The model is designed modularly, with components logically divided into separate modules: _DrinkSelection,_ _Payment Dispenser,_ and _Error._ This separation of concerns improves readability and maintainability, as each module has a well-defined purpose.
+The PRISM model was designed to meet the vending machine controller requirements while prioritizing correctness, clarity, and maintainability. The following decisions were made to achieve these goals:
 
-2. _Clear and Concise Variable Naming._ Descriptive and consistent variable names such as _state_, _kiwi_stock_, and _pay_ are used throughout the model. This improves code clarity and helps users understand the model's behavior.
+1. _Modular Architecture._ The model is divided into two primary modules: DrinkSelection and PaymentDispenser. This separation reflects the system’s logical components—drink selection interface and payment/dispensing mechanism—enhancing readability and maintainability. The DrinkSelection module manages user drink choices, ensuring selections are valid, while PaymentDispenser handles payment processing, stock updates, and error conditions. This modular design simplifies debugging and allows for future extensions, such as adding new drink types, aligning with the assignment’s component-based structure.
 
-3. _Well-Defined Transitions._ Transisitons between states are clearly defined, with conditions specified for each transition. This ensures that the model accurately reflects the intended behavior of the vending machine, such as allowing drink selection only when stock is available, or permanently staying in maintenance mode.
+2. _Descriptive Variable Naming_. Variables like state, kiwi_stock, pay, and dispense are named to clearly indicate their roles. For example, state uses values 0 (none), 1 (Kiwi-Cola), 2 (Bolt Energy), and 3 (Clear Water), directly mapping to the assignment’s drink types. This naming convention reduces ambiguity, improves code readability, and aids verification by making the model’s behavior intuitive for developers and evaluators.
+
+3. _Good Guard Conditions_. Transitions are guarded by conditions to enforce valid system behavior. For instance, the [select_kiwi] transition requires state=none, kiwi_stock>0, and no active maintenance, pay, or dispense states. This prevents invalid actions, such as selecting an out-of-stock drink, ensuring compliance with the requirement that customers cannot select unavailable drinks. The model generates 399 states and 832 transitions.
 
 4. _Intentional Error_. You can intentionally cause an error by selecting error after selecting a drink. The error transition leads to a maintenance mode.
 
@@ -136,40 +138,91 @@ _Customer selects Clear Water and pays via EFPOS, with correct pin._\
   image("Scenarios/scenario1.png", width: 60%),
   caption: "Simulation trace output: Customer selects Clear Water and pays via EFPOS with correct pin"
 )
-In this scenario, the customer successfully selects Clear Water and pays via EFPOS with the correct pin. The simulation trace shows that the drink is dispensed correctly, and the stock of Clear Water is reduced by one. The system remains in a normal operational state without entering maintenance mode.
-#pagebreak()
+Simulation Trace Output:
+
+Initial state: state=none, water_stock=3, pay=false, dispense=false, maintenance=false, main=false, error=false
+
+Step 1: [select_water] → state=water, water_stock=3, pay=false, dispense=false
+
+Step 2: [pay] → state=water, water_stock=2, pay=true, dispense=true
+
+Step 3: Reset → state=none, water_stock=2, pay=false, dispense=false
+
+Discussion:
+
+The customer selects Clear Water, triggering the [select_water] transition as water_stock>0 and no maintenance or error states are active. The system updates state to water. Upon entering the correct PIN, the [pay] transition sets pay=true, dispense=true, and decrements water_stock by 1. The system then resets to state=none, ready for the next transaction. The simulation trace confirms that the drink is dispensed correctly, and the system remains in normal operation without entering maintenance mode, as required.
+
 ==== Scenario 2
 _Customer selects Kiwi-Cola and pays via EFPOS, with incorrect pin._
 #figure(
   image("Scenarios/scenario2.png", width: 60%),
   caption: "Simulation trace output: Customer selects Kiwi-Cola and pays via EFPOS with incorrect pin"
 )
-In this scenario, the customer attempts to select Kiwi-Cola and pay via EFPOS but enters an incorrect pin. The simulation trace shows that the payment fails, and the system resets the payment status. The customer can then reattempt the selection or payment without entering maintenance mode.
+Scenario 2: Customer selects Kiwi-Cola and pays via EFPOS with incorrect PIN
+Simulation Trace Output:
+
+Initial state: state=none, kiwi_stock=3, pay=false, dispense=false, maintenance=false, main=false, error=false
+
+Step 1: [select_kiwi] → state=kiwi, kiwi_stock=3, pay=false, dispense=false
+
+Step 2: [wrong_pin] → state=none, kiwi_stock=3, pay=false, dispense=false
+
+Discussion:
+
+The customer selects Kiwi-Cola, triggering the [select_kiwi] transition as kiwi_stock>0 and no maintenance or error states are active. The system sets state to kiwi. An incorrect PIN entry triggers the [wrong_pin] transition, resetting pay to false and state to none. The simulation trace shows that the transaction is canceled, no stock is decremented, and the system remains operational, allowing the customer to retry selection or payment.
+
 ==== Scenario 3
 _Customer selects a drink but an error occurs._
 #figure(
   image("Scenarios/scenario3.png", width: 60%),
   caption: "Simulation trace output: Customer selects a drink but an error occurs"
 )
-In this scenario, the customer selects a drink, but an error occurs during the process. The simulation trace shows that the system enters maintenance mode due to the error. The customer cannot complete the transaction until the error is resolved, ensuring that the system remains in a safe state.
-#pagebreak()
+Initial state: state=none, bolt_stock=3, pay=false, dispense=false, maintenance=false, main=false, error=false
+
+Step 1: [select_bolt] → state=bolt, bolt_stock=3, pay=false, dispense=false
+
+Step 2: [error] → state=none, bolt_stock=3, maintenance=true
+
+Discussion:
+
+The customer selects Bolt Energy Drink, triggering the [select_bolt] transition as bolt_stock>0 and no maintenance or error states are active. An error then triggers the [error] transition in the PaymentDispenser module, setting maintenance=true. The simulation trace confirms that the system enters maintenance mode, halting further transactions. This behavior aligns with the requirement that an error places the vending machine in permanent maintenance mode.
 ==== Scenario 4
 _Customer selects a Clear Water but there are no drinks of this kind available._
 #figure(
   image("Scenarios/scenario4.png", width: 60%),
   caption: "Simulation trace output: Customer selects Clear Water but no drinks available"
 )
-_Customer selects a Clear Water but there are no drinks of this kind available._\
-In this scenario, the customer attempts to select Clear Water, but there are no drinks available. The simulation trace shows that the system does not allow the selection of an unavailable drink, and the customer is prompted to make a different selection. This ensures that the vending machine does not dispense an empty or unavailable drink.
+#pagebreak()
+Initial state: state=none, water_stock=0, pay=false, dispense=false, maintenance=false, main=false, error=false
 
+Step 1: [select_water] (disabled, water_stock=0) → state=none, water_stock=0, pay=false, dispense=false
+
+Discussion:
+
+The customer attempts to select Clear Water when water_stock=0. The [select_water] transition is disabled due to the guard condition water_stock>0, preventing the selection. The simulation trace shows that the system remains in state=none and prompts the customer to select another drink (e.g., Kiwi-Cola or Bolt Energy if available). This ensures the system does not allow selection of an unavailable drink, meeting the assignment’s requirement.
 ==== Scenario 5
 _Customer purchases Bolt Energy Drink and then purchases Clear Water._
 #figure(
   image("Scenarios/scenario5.png", width: 60%),
   caption: "Simulation trace output: Customer purchases Bolt Energy Drink and then purchases Clear Water"
 )
-Simulation trace output for each scenario with discussion
-In this scenario, the customer successfully purchases a Bolt Energy Drink and then proceeds to purchase Clear Water. The simulation trace shows that the system correctly updates the stock levels for both drinks and dispenses them as expected. The system remains in a normal operational state without entering maintenance mode, demonstrating its ability to handle multiple transactions sequentially.
+Initial state: state=none, bolt_stock=3, water_stock=3, pay=false, dispense=false, maintenance=false, main=false, error=false
+
+Step 1: [select_bolt] → state=bolt, bolt_stock=3, pay=false, dispense=false
+
+Step 2: [pay] → state=bolt, bolt_stock=2, pay=true, dispense=true
+
+Step 3: Reset → state=none, bolt_stock=2, pay=false, dispense=false
+
+Step 4: [select_water] → state=water, water_stock=3, pay=false, dispense=false
+
+Step 5: [pay] → state=water, water_stock=2, pay=true, dispense=true
+
+Step 6: Reset → state=none, water_stock=2, pay=false, dispense=false
+
+Discussion:
+
+The customer first selects and purchases a Bolt Energy Drink, triggering [select_bolt] and [pay], which reduces bolt_stock by 1 and sets dispense=true. The system resets to state=none. The customer then selects and purchases Clear Water, triggering [select_water] and [pay], reducing water_stock by 1. The simulation trace confirms that both transactions complete successfully, updating stock levels accurately and maintaining normal operation without entering maintenance mode. This demonstrates the model’s ability to handle sequential transactions, as required.
 #pagebreak()
 == Temporal Logic Formulae
 Here is our list of Formulae:
